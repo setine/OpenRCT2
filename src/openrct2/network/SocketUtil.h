@@ -11,14 +11,9 @@
 
 #include "../common.h"
 
-enum SOCKET_STATUS
-{
-    SOCKET_STATUS_CLOSED,
-    SOCKET_STATUS_RESOLVING,
-    SOCKET_STATUS_CONNECTING,
-    SOCKET_STATUS_CONNECTED,
-    SOCKET_STATUS_LISTENING,
-};
+#include <string>
+#include <stdexcept>
+
 
 enum NETWORK_READPACKET
 {

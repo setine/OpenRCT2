@@ -448,9 +448,15 @@ void Network::CloseConnection()
         _advertiser = nullptr;
     }
 
+    if(_local_advertiser)
+    {
+        delete _local_advertiser;
+        _local_advertiser = nullptr;
+    }
+
     mode = NETWORK_MODE_NONE;
     status = NETWORK_STATUS_NONE;
-    _lastConnectStatus = SOCKET_STATUS_CLOSED;
+    _lastConnectStatus = TCP_SOCKET_STATUS_CLOSED;
     if (server_connection != nullptr)
     {
         server_connection->AuthStatus = NETWORK_AUTH_NONE;
@@ -481,7 +487,7 @@ bool Network::BeginClient(const char* host, uint16_t port)
     server_connection->Socket = CreateTcpSocket();
     server_connection->Socket->ConnectAsync(host, port);
     status = NETWORK_STATUS_CONNECTING;
-    _lastConnectStatus = SOCKET_STATUS_CLOSED;
+    _lastConnectStatus = TCP_SOCKET_STATUS_CLOSED;
 
     BeginChatLog();
     BeginServerLog();
@@ -619,6 +625,11 @@ bool Network::BeginServer(uint16_t port, const char* address)
         _advertiser = CreateServerAdvertiser(listening_port);
     }
 
+    if (gConfigNetwork.advertise_locally)
+    {
+        _local_advertiser = CreateLocalServerAdvertiser(gConfigNetwork);
+    }
+
     if (gConfigNetwork.pause_server_if_no_clients)
     {
         game_do_command(0, 1, 0, 0, GAME_COMMAND_TOGGLE_PAUSE, 0, 0);
@@ -725,6 +736,11 @@ void Network::UpdateServer()
         _advertiser->Update();
     }
 
+    if (_local_advertiser != nullptr)
+    {
+        _local_advertiser->Update(player_list.size(), _password.size() > 0);
+    }
+
     ITcpSocket* tcpSocket = listening_socket->Accept();
     if (tcpSocket != nullptr)
     {
@@ -742,11 +758,11 @@ void Network::UpdateClient()
         {
             switch (server_connection->Socket->GetStatus())
             {
-                case SOCKET_STATUS_RESOLVING:
+                case TCP_SOCKET_STATUS_RESOLVING:
                 {
-                    if (_lastConnectStatus != SOCKET_STATUS_RESOLVING)
+                    if (_lastConnectStatus != TCP_SOCKET_STATUS_RESOLVING)
                     {
-                        _lastConnectStatus = SOCKET_STATUS_RESOLVING;
+                        _lastConnectStatus = TCP_SOCKET_STATUS_RESOLVING;
                         char str_resolving[256];
                         format_string(str_resolving, 256, STR_MULTIPLAYER_RESOLVING, nullptr);
 
@@ -757,11 +773,11 @@ void Network::UpdateClient()
                     }
                     break;
                 }
-                case SOCKET_STATUS_CONNECTING:
+                case TCP_SOCKET_STATUS_CONNECTING:
                 {
-                    if (_lastConnectStatus != SOCKET_STATUS_CONNECTING)
+                    if (_lastConnectStatus != TCP_SOCKET_STATUS_CONNECTING)
                     {
-                        _lastConnectStatus = SOCKET_STATUS_CONNECTING;
+                        _lastConnectStatus = TCP_SOCKET_STATUS_CONNECTING;
                         char str_connecting[256];
                         format_string(str_connecting, 256, STR_MULTIPLAYER_CONNECTING, nullptr);
 
@@ -774,7 +790,7 @@ void Network::UpdateClient()
                     }
                     break;
                 }
-                case SOCKET_STATUS_CONNECTED:
+                case TCP_SOCKET_STATUS_CONNECTED:
                 {
                     status = NETWORK_STATUS_CONNECTED;
                     server_connection->ResetLastPacketTime();

@@ -12,6 +12,15 @@
 #include "../common.h"
 #include "SocketUtil.h"
 
+enum TCP_SOCKET_STATUS
+{
+    TCP_SOCKET_STATUS_CLOSED,
+    TCP_SOCKET_STATUS_RESOLVING,
+    TCP_SOCKET_STATUS_CONNECTING,
+    TCP_SOCKET_STATUS_CONNECTED,
+    TCP_SOCKET_STATUS_LISTENING,
+};
+
 /**
  * Represents a TCP socket / connection or listener.
  */
@@ -22,7 +31,7 @@ public:
     {
     }
 
-    virtual SOCKET_STATUS GetStatus() abstract;
+    virtual TCP_SOCKET_STATUS GetStatus() abstract;
     virtual const char* GetError() abstract;
     virtual const char* GetHostName() const abstract;
 
