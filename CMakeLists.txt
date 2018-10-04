@@ -6,6 +6,8 @@ endif()
 
 project(openrct2 CXX)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+
 if (NOT MSVC)
     include(FindPkgConfig)
 endif ()
