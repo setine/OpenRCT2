@@ -68,15 +68,6 @@ static bool _wsaInitialised = false;
 
 class TcpSocket;
 
-class SocketException : public std::runtime_error
-{
-public:
-    explicit SocketException(const std::string& message)
-        : std::runtime_error(message)
-    {
-    }
-};
-
 class TcpSocket final : public ITcpSocket
 {
 private:
@@ -500,49 +491,5 @@ ITcpSocket* CreateTcpSocket()
 {
     return new TcpSocket();
 }
-
-bool InitialiseWSA()
-{
-#    ifdef _WIN32
-    if (!_wsaInitialised)
-    {
-        log_verbose("Initialising WSA");
-        WSADATA wsa_data;
-        if (WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0)
-        {
-            log_error("Unable to initialise winsock.");
-            return false;
-        }
-        _wsaInitialised = true;
-    }
-    return _wsaInitialised;
-#    else
-    return true;
-#    endif
-}
-
-void DisposeWSA()
-{
-#    ifdef _WIN32
-    if (_wsaInitialised)
-    {
-        WSACleanup();
-        _wsaInitialised = false;
-    }
-#    endif
-}
-
-namespace Convert
-{
-    uint16_t HostToNetwork(uint16_t value)
-    {
-        return htons(value);
-    }
-
-    uint16_t NetworkToHost(uint16_t value)
-    {
-        return ntohs(value);
-    }
-} // namespace Convert
 
 #endif
