@@ -22,6 +22,7 @@
 #include <openrct2/network/Http.h>
 #include <openrct2/network/ServerList.h>
 #include <openrct2/network/network.h>
+#include <openrct2/network/NetworkLocalServerDiscoverer.h>
 #include <openrct2/sprites.h>
 #include <openrct2/util/Util.h>
 #include <vector>
@@ -41,6 +42,8 @@ static std::vector<server_entry> _serverEntries;
 static std::mutex _mutex;
 static uint32_t _numPlayersOnline = 0;
 static rct_string_id status_text = STR_SERVER_LIST_CONNECTING;
+
+static std::unique_ptr<INetworkLocalServerDiscoverer> _discoverer;
 
 // clang-format off
 enum {
@@ -136,6 +139,7 @@ static void join_server(std::string address);
 static void fetch_servers();
 static void fetch_servers_callback(Http::Response& response);
 #endif
+static void fetch_local_servers();
 static bool is_version_valid(const std::string& version);
 
 rct_window* window_server_list_open()
@@ -177,12 +181,16 @@ rct_window* window_server_list_open()
     fetch_servers();
 #endif
 
+    _discoverer.reset(CreateLocalServerDiscoverer(gConfigNetwork));
+    fetch_local_servers();
+
     return window;
 }
 
 static void window_server_list_close(rct_window* w)
 {
     std::lock_guard<std::mutex> guard(_mutex);
+    if(_discoverer) _discoverer->StopQuery();
     dispose_server_entry_list();
 }
 
@@ -218,6 +226,7 @@ static void window_server_list_mouseup(rct_window* w, rct_widgetindex widgetInde
 #ifndef DISABLE_HTTP
             fetch_servers();
 #endif
+            fetch_local_servers();
             break;
         case WIDX_ADD_SERVER:
             window_text_input_open(w, widgetIndex, STR_ADD_SERVER, STR_ENTER_HOSTNAME_OR_IP_ADDRESS, STR_NONE, 0, 128);
@@ -269,6 +278,19 @@ static void window_server_list_update(rct_window* w)
     {
         window_update_textbox_caret();
         widget_invalidate(w, WIDX_PLAYER_NAME_INPUT);
+    }
+
+    if(_discoverer) {
+        std::vector<server_entry> servers = _discoverer->Update();
+        if(!servers.empty())
+        {
+            std::lock_guard<std::mutex> guard(_mutex);
+            for(const server_entry& entry : servers)
+            {
+                auto& newserver = add_server_entry(entry.address);
+                newserver = entry;
+            }
+        }
     }
 }
 
@@ -651,6 +673,11 @@ static void fetch_servers()
     request.header["Accept"] = "application/json";
     status_text = STR_SERVER_LIST_CONNECTING;
     Http::DoAsync(request, fetch_servers_callback);
+}
+
+static void fetch_local_servers()
+{
+    _discoverer->StartQuery();
 }
 
 static uint32_t get_total_player_count()

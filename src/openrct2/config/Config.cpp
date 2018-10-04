@@ -388,6 +388,9 @@ namespace Config
             model->log_chat = reader->GetBoolean("log_chat", false);
             model->log_server_actions = reader->GetBoolean("log_server_actions", false);
             model->pause_server_if_no_clients = reader->GetBoolean("pause_server_if_no_clients", false);
+            model->advertise_locally = reader->GetBoolean("advertise_locally", true);
+            model->advertise_locally_address = reader->GetCString("advertise_locally_address", "239.255.0.1");
+            model->advertise_locally_port = reader->GetInt32("advertise_locally_port", NETWORK_DEFAULT_PORT);
         }
     }
 
@@ -413,6 +416,9 @@ namespace Config
         writer->WriteBoolean("log_chat", model->log_chat);
         writer->WriteBoolean("log_server_actions", model->log_server_actions);
         writer->WriteBoolean("pause_server_if_no_clients", model->pause_server_if_no_clients);
+        writer->WriteBoolean("advertise_locally", model->advertise_locally);
+        writer->WriteString("advertise_locally_address", model->advertise_locally_address);
+        writer->WriteInt32("advertise_locally_port", model->advertise_locally_port);
     }
 
     static void ReadNotifications(IIniReader* reader)

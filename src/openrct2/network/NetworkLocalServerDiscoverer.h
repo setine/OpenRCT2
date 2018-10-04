@@ -10,27 +10,20 @@
 #pragma once
 
 #include "../common.h"
-
-#include <string>
+#include "ServerList.h"
 #include <vector>
 
-struct server_entry
+struct NetworkConfiguration;
+
+interface INetworkLocalServerDiscoverer
 {
-    std::string address;
-    std::string name;
-    std::string description;
-    std::string version;
-    bool requiresPassword = false;
-    bool favourite = false;
-    uint8_t players = 0;
-    uint8_t maxplayers = 0;
+    virtual ~INetworkLocalServerDiscoverer() = default;
+
+    virtual void StartQuery() abstract;
+    virtual void StopQuery() abstract;
+
+    virtual std::vector<server_entry> Update() abstract;
+
 };
 
-inline bool operator<(const server_entry& l, const server_entry& r)
-{
-    return l.address < r.address;
-}
-
-
-std::vector<server_entry> server_list_read();
-bool server_list_write(const std::vector<server_entry>& entries);
+INetworkLocalServerDiscoverer* CreateLocalServerDiscoverer(const NetworkConfiguration& config);
