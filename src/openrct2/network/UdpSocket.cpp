@@ -147,31 +147,28 @@ public:
         if (type == UDP_SOCKET_TYPE_IPV4)
         {
             const sockaddr_in& ss_in = (const sockaddr_in&)ss;
-            if (IN_MULTICAST(ntohl(ss_in.sin_addr.s_addr)))
-            {
-                ip_mreq mreq{};
-                mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-                mreq.imr_multiaddr = ss_in.sin_addr;
 
-                if (setsockopt(_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
-                {
-                    throw SocketException("Failed to set multicast mode.");
-                }
-            }
+            if (!IN_MULTICAST(ntohl(ss_in.sin_addr.s_addr)))
+                throw SocketException("Address " + endpoint.address + " isn't a multicast address");
+
+            ip_mreq mreq{};
+            mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+            mreq.imr_multiaddr = ss_in.sin_addr;
+
+            if (setsockopt(_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+                throw SocketException("Failed to set multicast mode.");
         }
         else if (type == UDP_SOCKET_TYPE_IPV6)
         {
             const sockaddr_in6& ss_in = (const sockaddr_in6&)ss;
-            if (IN6_IS_ADDR_MULTICAST(&ss_in.sin6_addr))
-            {
-                ipv6_mreq mreq{};
-                mreq.ipv6mr_multiaddr = ss_in.sin6_addr;
+            if (!IN6_IS_ADDR_MULTICAST(&ss_in.sin6_addr))
+                throw SocketException("Address " + endpoint.address + " isn't a multicast address");
 
-                if (setsockopt(_socket, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
-                {
-                    throw SocketException("Failed to set multicast mode.");
-                }
-            }
+            ipv6_mreq mreq{};
+            mreq.ipv6mr_multiaddr = ss_in.sin6_addr;
+
+            if (setsockopt(_socket, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+                throw SocketException("Failed to set multicast mode.");
         }
         else
         {
@@ -227,21 +224,31 @@ public:
             throw std::runtime_error("Socket not bound.");
         }
 
-        // TODO ipv6
         sockaddr_storage ss{};
         socklen_t srcAddressSize = sizeof(ss);
 
         int32_t readBytes = recvfrom(_socket, (char*)buffer, (int32_t)size, 0, (sockaddr*)&ss, &srcAddressSize);
 
+        if(_type == UDP_SOCKET_TYPE_IPV4)
         {
             std::array<char, INET_ADDRSTRLEN + 1> address{};
             const sockaddr_in& ss_in = (sockaddr_in&)ss;
             if (inet_ntop(AF_INET, &(ss_in.sin_addr), address.data(), address.size()))
-            {
                 srcEndpoint.address = std::string(address.begin(), address.end());
-            }
 
             srcEndpoint.port = Convert::NetworkToHost(ss_in.sin_port);
+        } else if(_type == UDP_SOCKET_TYPE_IPV6)
+        {
+            std::array<char, INET6_ADDRSTRLEN + 1> address{};
+            const sockaddr_in6& ss_in = (const sockaddr_in6&)ss;
+
+            if (inet_ntop(AF_INET6, &(ss_in.sin6_addr), address.data(), address.size()))
+                srcEndpoint.address = std::string(address.begin(), address.end());
+
+            srcEndpoint.port = Convert::NetworkToHost(ss_in.sin6_port);
+
+        } else {
+            throw SocketException("Unknown UDP socket type encountered!");
         }
 
         if (readBytes == 0)
