@@ -140,7 +140,6 @@ static void join_server(std::string address);
 static void fetch_servers();
 static void fetch_servers_callback(Http::Response& response);
 #endif
-static void fetch_local_servers();
 static bool is_version_valid(const std::string& version);
 
 rct_window* window_server_list_open()
@@ -183,7 +182,7 @@ rct_window* window_server_list_open()
 #endif
 
     _discoverer.reset(CreateLocalServerDiscoverer(gConfigNetwork));
-    fetch_local_servers();
+    _discoverer->StartQuery();
 
     return window;
 }
@@ -227,7 +226,7 @@ static void window_server_list_mouseup(rct_window* w, rct_widgetindex widgetInde
 #ifndef DISABLE_HTTP
             fetch_servers();
 #endif
-            fetch_local_servers();
+            _discoverer->StartQuery();
             break;
         case WIDX_ADD_SERVER:
             window_text_input_open(w, widgetIndex, STR_ADD_SERVER, STR_ENTER_HOSTNAME_OR_IP_ADDRESS, STR_NONE, 0, 128);
@@ -674,11 +673,6 @@ static void fetch_servers()
     request.header["Accept"] = "application/json";
     status_text = STR_SERVER_LIST_CONNECTING;
     Http::DoAsync(request, fetch_servers_callback);
-}
-
-static void fetch_local_servers()
-{
-    _discoverer->StartQuery();
 }
 
 static uint32_t get_total_player_count()
