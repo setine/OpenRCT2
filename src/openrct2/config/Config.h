@@ -152,7 +152,6 @@ struct NetworkConfiguration
     bool log_server_actions;
     bool pause_server_if_no_clients;
     bool advertise_locally;
-    int32_t advertise_locally_port;
     char* advertise_locally_address;
 };
 
