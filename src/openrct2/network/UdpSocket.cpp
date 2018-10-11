@@ -164,6 +164,12 @@ public:
         }
     }
 
+    UDP_SOCKET_TYPE GetType() override
+    {
+        // TODO ipv6
+        return UDP_SOCKET_TYPE_IPV4;
+    }
+
     UDP_SOCKET_STATUS GetStatus() override
     {
         return _status;

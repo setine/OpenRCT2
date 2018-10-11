@@ -152,7 +152,8 @@ struct NetworkConfiguration
     bool log_server_actions;
     bool pause_server_if_no_clients;
     bool advertise_locally;
-    char* advertise_locally_address;
+    char* advertise_locally_address_ipv4;
+    char* advertise_locally_address_ipv6;
 };
 
 struct NotificationConfiguration

@@ -20,6 +20,13 @@ enum UDP_SOCKET_STATUS
 };
 
 
+enum UDP_SOCKET_TYPE
+{
+    UDP_SOCKET_TYPE_CLOSED,
+    UDP_SOCKET_TYPE_IPV4,
+    UDP_SOCKET_TYPE_IPV6
+};
+
 struct UdpEndpoint {
 
     UdpEndpoint(){}
@@ -46,6 +53,7 @@ public:
     virtual void Bind(const char* address, uint16_t port) abstract;
     virtual void JoinMulticastGroup(const char* address, uint16_t port) abstract;
 
+    virtual UDP_SOCKET_TYPE GetType() abstract;
     virtual UDP_SOCKET_STATUS GetStatus() abstract;
 
 
