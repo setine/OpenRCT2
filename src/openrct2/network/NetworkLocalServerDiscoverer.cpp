@@ -30,8 +30,9 @@ class NetworkLocalServerDiscoverer final : public INetworkLocalServerDiscoverer
 {
 public:
     NetworkLocalServerDiscoverer(const NetworkConfiguration& config)
-        : _listenPort(config.default_port)
-        , _multicastEndpoint(config.advertise_locally_address, config.default_port)
+        : _multicastEndpointIPv4(config.advertise_locally_address_ipv4, config.default_port)
+        , _multicastEndpointIPv6(config.advertise_locally_address_ipv6, config.default_port)
+        , _listenPort(config.default_port)
         , _socket(CreateUdpSocket())
     {
     }
@@ -48,6 +49,14 @@ public:
             if (_socket->GetStatus() == UDP_SOCKET_STATUS_CLOSED)
             {
                 _socket->Bind(_listenPort);
+
+                if(_socket->GetType() == UDP_SOCKET_TYPE_IPV4)
+                    _multicastEndpoint = _multicastEndpointIPv4;
+                else if(_socket->GetType() == UDP_SOCKET_TYPE_IPV6)
+                    _multicastEndpoint = _multicastEndpointIPv6;
+                else
+                    throw SocketException("Unknown UDP socket type encountered!");
+
                 _socket->JoinMulticastGroup(_multicastEndpoint.address.c_str(), _multicastEndpoint.port);
             }
 
@@ -68,7 +77,6 @@ public:
         _knownServers.clear();
 
         // TODO Leave group?
-
     }
 
     std::vector<server_entry> Update() override
@@ -127,8 +135,7 @@ private:
                 return false;
             }
 
-            entry.address = serverEndpoint.address + ":"
-                + std::to_string(json_integer_value(port));
+            entry.address = serverEndpoint.address + ":" + std::to_string(json_integer_value(port));
             entry.name = json_string_value(name);
             entry.description = json_string_value(description);
             entry.requiresPassword = json_boolean_value(requiresPassword);
@@ -143,6 +150,9 @@ private:
 
         return true;
     }
+
+    const UdpEndpoint _multicastEndpointIPv4;
+    const UdpEndpoint _multicastEndpointIPv6;
 
     uint16_t _listenPort;
     UdpEndpoint _multicastEndpoint;
