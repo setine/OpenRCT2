@@ -38,9 +38,9 @@ public:
             _socket->Bind(config.default_port);
 
             if(_socket->GetType() == UDP_SOCKET_TYPE_IPV4)
-                _socket->JoinMulticastGroup(config.advertise_locally_address_ipv4, config.default_port);
+                _socket->JoinMulticastGroup(UdpEndpoint(config.advertise_locally_address_ipv4, config.default_port));
             else if(_socket->GetType() == UDP_SOCKET_TYPE_IPV6)
-                _socket->JoinMulticastGroup(config.advertise_locally_address_ipv6, config.default_port);
+                _socket->JoinMulticastGroup(UdpEndpoint(config.advertise_locally_address_ipv6, config.default_port));
             else
                 throw SocketException("Unknown UDP socket type encountered!");
 

@@ -7,7 +7,6 @@
  * OpenRCT2 is licensed under the GNU General Public License version 3.
  *****************************************************************************/
 
-
 // TODO Cleanup includes
 #ifndef DISABLE_NETWORK
 
@@ -66,9 +65,8 @@ class UdpSocket final : public IUdpSocket
 {
 private:
     UDP_SOCKET_STATUS _status = UDP_SOCKET_STATUS_CLOSED;
-    uint16_t _listeningPort = 0;
+    UDP_SOCKET_TYPE _type = UDP_SOCKET_TYPE_UNDEFINED;
     SOCKET _socket = INVALID_SOCKET;
-
 
 public:
     UdpSocket() = default;
@@ -78,12 +76,7 @@ public:
         CloseSocket();
     }
 
-    void Bind(uint16_t port) override
-    {
-        Bind(nullptr, port);
-    }
-
-    void Bind(const char* address, uint16_t port) override
+    void Bind(const UdpEndpoint& endpoint) override
     {
         if (_status != UDP_SOCKET_STATUS_CLOSED)
         {
@@ -92,10 +85,11 @@ public:
 
         sockaddr_storage ss{};
         int32_t ss_len;
-        if (!ResolveAddress(address, port, &ss, &ss_len))
-        {
+        auto [success, type] = ResolveAddress(endpoint, &ss, &ss_len);
+        if (!success)
             throw SocketException("Unable to resolve address.");
-        }
+
+        _type = type;
 
         // Create the listening socket
         _socket = socket(ss.ss_family, SOCK_DGRAM, 0);
@@ -105,13 +99,16 @@ public:
         }
 
         // Turn off IPV6_V6ONLY so we can accept both v4 and v6 connections
-        int32_t value = 0;
-        if (setsockopt(_socket, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&value, sizeof(value)) != 0)
+        if (_type == UDP_SOCKET_TYPE_IPV6)
         {
-            log_error("IPV6_V6ONLY failed. %d", LAST_SOCKET_ERROR());
+            int32_t value = 0;
+            if (setsockopt(_socket, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&value, sizeof(value)) != 0)
+            {
+                log_error("IPV6_V6ONLY failed. %d", LAST_SOCKET_ERROR());
+            }
         }
 
-        value = 1;
+        int32_t value = 1;
         if (setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, (const char*)&value, sizeof(value)) != 0)
         {
             log_error("SO_REUSEADDR failed. %d", LAST_SOCKET_ERROR());
@@ -136,29 +133,28 @@ public:
             throw;
         }
 
-        _listeningPort = port;
         _status = UDP_SOCKET_STATUS_BOUND;
     }
 
-    virtual void JoinMulticastGroup(const char* address, uint16_t port) override
+    virtual void JoinMulticastGroup(const UdpEndpoint& endpoint) override
     {
         sockaddr_storage ss{};
         int32_t ss_len;
-        if (!ResolveAddress(address, port, &ss, &ss_len))
-        {
+        auto [success, type] = ResolveAddress(endpoint, &ss, &ss_len);
+        if (!success)
             throw SocketException("Unable to resolve address.");
-        }
 
         // TODO ipv6
         const sockaddr_in& ss_in = (const sockaddr_in&)ss;
 
-        if(IN_MULTICAST(ntohl(ss_in.sin_addr.s_addr)))
+        if (IN_MULTICAST(ntohl(ss_in.sin_addr.s_addr)))
         {
             ip_mreq mreq{};
             mreq.imr_interface.s_addr = htonl(INADDR_ANY);
             mreq.imr_multiaddr = ss_in.sin_addr;
 
-            if(setsockopt(_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
+            if (setsockopt(_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+            {
                 throw SocketException("Failed to set multicast mode.");
             }
         }
@@ -166,8 +162,7 @@ public:
 
     UDP_SOCKET_TYPE GetType() override
     {
-        // TODO ipv6
-        return UDP_SOCKET_TYPE_IPV4;
+        return _type;
     }
 
     UDP_SOCKET_STATUS GetStatus() override
@@ -184,18 +179,16 @@ public:
 
         sockaddr_storage ss{};
         int32_t ss_len = sizeof(ss);
-        if(!ResolveAddress(remote.address.c_str(), remote.port, &ss, &ss_len))
-        {
+        auto [success, type] = ResolveAddress(remote, &ss, &ss_len);
+        if (!success)
             throw SocketException("Unable to resolve address.");
-        }
 
         size_t totalSent = 0;
         do
         {
             const char* bufferStart = (const char*)buffer + totalSent;
             size_t remainingSize = size - totalSent;
-            int32_t sentBytes = sendto(_socket, bufferStart, (int32_t)remainingSize, 0,
-                    (const sockaddr*)&ss, ss_len);
+            int32_t sentBytes = sendto(_socket, bufferStart, (int32_t)remainingSize, 0, (const sockaddr*)&ss, ss_len);
 
             if (sentBytes == SOCKET_ERROR)
             {
@@ -206,7 +199,7 @@ public:
         return totalSent;
     }
 
-    std::tuple<NETWORK_READPACKET,UdpEndpoint> ReceiveDataFrom(void* buffer, size_t size, size_t* sizeReceived) override
+    std::tuple<NETWORK_READPACKET, UdpEndpoint> ReceiveDataFrom(void* buffer, size_t size, size_t* sizeReceived) override
     {
         UdpEndpoint srcEndpoint;
 
@@ -215,17 +208,16 @@ public:
             throw std::runtime_error("Socket not bound.");
         }
 
-        //TODO ipv6
+        // TODO ipv6
         sockaddr_storage ss{};
         socklen_t srcAddressSize = sizeof(ss);
 
-        int32_t readBytes = recvfrom(_socket, (char*)buffer, (int32_t)size, 0,
-                (sockaddr*)&ss, &srcAddressSize);
+        int32_t readBytes = recvfrom(_socket, (char*)buffer, (int32_t)size, 0, (sockaddr*)&ss, &srcAddressSize);
 
         {
-            std::array<char,INET_ADDRSTRLEN+1> address{};
+            std::array<char, INET_ADDRSTRLEN + 1> address{};
             const sockaddr_in& ss_in = (sockaddr_in&)ss;
-            if(inet_ntop(AF_INET, &(ss_in.sin_addr), address.data(), address.size()))
+            if (inet_ntop(AF_INET, &(ss_in.sin_addr), address.data(), address.size()))
             {
                 srcEndpoint.address = std::string(address.begin(), address.end());
             }
@@ -236,7 +228,7 @@ public:
         if (readBytes == 0)
         {
             *sizeReceived = 0;
-            return {NETWORK_READPACKET_DISCONNECTED, srcEndpoint};
+            return { NETWORK_READPACKET_DISCONNECTED, srcEndpoint };
         }
         else if (readBytes == SOCKET_ERROR)
         {
@@ -255,17 +247,17 @@ public:
 #    endif // _WIN32
             if (LAST_SOCKET_ERROR() != EWOULDBLOCK)
             {
-                return {NETWORK_READPACKET_DISCONNECTED, srcEndpoint};
+                return { NETWORK_READPACKET_DISCONNECTED, srcEndpoint };
             }
             else
             {
-                return {NETWORK_READPACKET_NO_DATA, UdpEndpoint()};
+                return { NETWORK_READPACKET_NO_DATA, UdpEndpoint() };
             }
         }
         else
         {
             *sizeReceived = readBytes;
-            return {NETWORK_READPACKET_SUCCESS, srcEndpoint};
+            return { NETWORK_READPACKET_SUCCESS, srcEndpoint };
         }
     }
 
@@ -291,36 +283,45 @@ private:
         _status = UDP_SOCKET_STATUS_CLOSED;
     }
 
-    // TODO move to utils
-    bool ResolveAddress(const char* address, uint16_t port, sockaddr_storage* ss, int32_t* ss_len)
+    std::tuple<bool, UDP_SOCKET_TYPE> ResolveAddress(const UdpEndpoint& endpoint, sockaddr_storage* ss, int32_t* ss_len)
     {
-        std::string serviceName = std::to_string(port);
+        const char* endpointAddress = endpoint.address.c_str();
+        std::string serviceName = std::to_string(endpoint.port);
 
         addrinfo hints = {};
         hints.ai_family = AF_UNSPEC;
-        if (address == nullptr)
+        if (endpoint.address.empty())
         {
             hints.ai_flags = AI_PASSIVE;
+            endpointAddress = nullptr;
         }
 
         addrinfo* result = nullptr;
-        int errorcode = getaddrinfo(address, serviceName.c_str(), &hints, &result);
+        int errorcode = getaddrinfo(endpointAddress, serviceName.c_str(), &hints, &result);
         if (errorcode != 0)
         {
             log_error("Resolving address failed: Code %d.", errorcode);
             log_error("Resolution error message: %s.", gai_strerror(errorcode));
-            return false;
+            return { false, UDP_SOCKET_TYPE_UNDEFINED };
         }
         if (result == nullptr)
         {
-            return false;
+            return { false, UDP_SOCKET_TYPE_UNDEFINED };
         }
         else
         {
             memcpy(ss, result->ai_addr, result->ai_addrlen);
             *ss_len = (int32_t)result->ai_addrlen;
+
+            auto family = result->ai_family;
             freeaddrinfo(result);
-            return true;
+
+            if (family == AF_INET)
+                return { true, UDP_SOCKET_TYPE_IPV4 };
+            else if (family == AF_INET6)
+                return { true, UDP_SOCKET_TYPE_IPV6 };
+            else
+                return { true, UDP_SOCKET_TYPE_UNDEFINED };
         }
     }
 
@@ -334,7 +335,6 @@ private:
         return fcntl(socket, F_SETFL, on ? (flags | O_NONBLOCK) : (flags & ~O_NONBLOCK)) == 0;
 #    endif
     }
-
 };
 
 IUdpSocket* CreateUdpSocket()
