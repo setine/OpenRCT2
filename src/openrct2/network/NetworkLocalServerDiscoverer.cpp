@@ -75,8 +75,6 @@ public:
 
         _socket->Close();
         _knownServers.clear();
-
-        // TODO Leave group?
     }
 
     std::vector<server_entry> Update() override
@@ -93,9 +91,7 @@ public:
         if (status == NETWORK_READPACKET_SUCCESS)
         {
             std::string msg(_buffer.begin(), _buffer.begin() + readBytes);
-            std::cout << endpoint.address << " received: " << msg << std::endl;
 
-            // TODO Check and build server_entry
             server_entry entry;
             bool successful = parseServerReply(msg, endpoint, entry);
             if (successful)
