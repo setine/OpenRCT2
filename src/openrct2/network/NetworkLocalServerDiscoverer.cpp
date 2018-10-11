@@ -30,14 +30,10 @@ class NetworkLocalServerDiscoverer final : public INetworkLocalServerDiscoverer
 {
 public:
     NetworkLocalServerDiscoverer(const NetworkConfiguration& config)
-        : _listenAddress(config.listen_address)
-        , _listenPort(config.default_port)
+        : _listenPort(config.default_port)
         , _multicastEndpoint(config.advertise_locally_address, config.default_port)
         , _socket(CreateUdpSocket())
     {
-        // TODO
-        if (_listenAddress.empty())
-            _listenAddress = "0.0.0.0";
     }
 
     ~NetworkLocalServerDiscoverer()
@@ -51,7 +47,7 @@ public:
         {
             if (_socket->GetStatus() == UDP_SOCKET_STATUS_CLOSED)
             {
-                _socket->Bind(_listenAddress.c_str(), _listenPort);
+                _socket->Bind(_listenPort);
                 _socket->JoinMulticastGroup(_multicastEndpoint.address.c_str(), _multicastEndpoint.port);
             }
 
@@ -148,7 +144,6 @@ private:
         return true;
     }
 
-    std::string _listenAddress;
     uint16_t _listenPort;
     UdpEndpoint _multicastEndpoint;
 
