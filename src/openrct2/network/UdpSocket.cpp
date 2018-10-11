@@ -144,19 +144,38 @@ public:
         if (!success)
             throw SocketException("Unable to resolve address.");
 
-        // TODO ipv6
-        const sockaddr_in& ss_in = (const sockaddr_in&)ss;
-
-        if (IN_MULTICAST(ntohl(ss_in.sin_addr.s_addr)))
+        if (type == UDP_SOCKET_TYPE_IPV4)
         {
-            ip_mreq mreq{};
-            mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-            mreq.imr_multiaddr = ss_in.sin_addr;
-
-            if (setsockopt(_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+            const sockaddr_in& ss_in = (const sockaddr_in&)ss;
+            if (IN_MULTICAST(ntohl(ss_in.sin_addr.s_addr)))
             {
-                throw SocketException("Failed to set multicast mode.");
+                ip_mreq mreq{};
+                mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+                mreq.imr_multiaddr = ss_in.sin_addr;
+
+                if (setsockopt(_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+                {
+                    throw SocketException("Failed to set multicast mode.");
+                }
             }
+        }
+        else if (type == UDP_SOCKET_TYPE_IPV6)
+        {
+            const sockaddr_in6& ss_in = (const sockaddr_in6&)ss;
+            if (IN6_IS_ADDR_MULTICAST(&ss_in.sin6_addr))
+            {
+                ipv6_mreq mreq{};
+                mreq.ipv6mr_multiaddr = ss_in.sin6_addr;
+
+                if (setsockopt(_socket, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+                {
+                    throw SocketException("Failed to set multicast mode.");
+                }
+            }
+        }
+        else
+        {
+            throw SocketException("Unknown UDP socket type encountered!");
         }
     }
 
