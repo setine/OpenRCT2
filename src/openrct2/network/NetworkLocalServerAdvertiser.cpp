@@ -35,8 +35,8 @@ public:
     {
         try
         {
-            _socket->Bind(config.advertise_locally_address, config.advertise_locally_port);
-            _socket->JoinMulticastGroup(config.advertise_locally_address, config.advertise_locally_port);
+            _socket->Bind(config.advertise_locally_address, config.default_port);
+            _socket->JoinMulticastGroup(config.advertise_locally_address, config.default_port);
         }
         catch (const std::exception& ex)
         {

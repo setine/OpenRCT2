@@ -62,8 +62,6 @@
 
 #    include "UdpSocket.h"
 
-class UdpSocket;
-
 class UdpSocket final : public IUdpSocket
 {
 private:

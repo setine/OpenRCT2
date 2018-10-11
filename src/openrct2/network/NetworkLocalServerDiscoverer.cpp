@@ -32,7 +32,7 @@ public:
     NetworkLocalServerDiscoverer(const NetworkConfiguration& config)
         : _listenAddress(config.listen_address)
         , _listenPort(config.default_port)
-        , _multicastEndpoint(config.advertise_locally_address, config.advertise_locally_port)
+        , _multicastEndpoint(config.advertise_locally_address, config.default_port)
         , _socket(CreateUdpSocket())
     {
         // TODO

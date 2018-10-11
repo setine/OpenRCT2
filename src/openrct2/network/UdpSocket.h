@@ -33,15 +33,14 @@ struct UdpEndpoint {
     uint16_t port;
 };
 
+
 /**
  * Represents a UDP socket.
  */
 interface IUdpSocket
 {
 public:
-    virtual ~IUdpSocket()
-    {
-    }
+    virtual ~IUdpSocket() = default;
 
     virtual void Bind(uint16_t port) abstract;
     virtual void Bind(const char* address, uint16_t port) abstract;
