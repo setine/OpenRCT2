@@ -57,7 +57,7 @@ public:
                 else
                     throw SocketException("Unknown UDP socket type encountered!");
 
-                _socket->JoinMulticastGroup(_multicastEndpoint.address.c_str(), _multicastEndpoint.port);
+                _socket->JoinMulticastGroup(_multicastEndpoint);
             }
 
             _socket->SendDataTo(_multicastEndpoint, SERVER_QUERY.data(), SERVER_QUERY.size());

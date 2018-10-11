@@ -22,7 +22,7 @@ enum UDP_SOCKET_STATUS
 
 enum UDP_SOCKET_TYPE
 {
-    UDP_SOCKET_TYPE_CLOSED,
+    UDP_SOCKET_TYPE_UNDEFINED,
     UDP_SOCKET_TYPE_IPV4,
     UDP_SOCKET_TYPE_IPV6
 };
@@ -30,6 +30,10 @@ enum UDP_SOCKET_TYPE
 struct UdpEndpoint {
 
     UdpEndpoint(){}
+
+    UdpEndpoint(uint16_t port_)
+        : port(port_)
+    {}
 
     UdpEndpoint(const std::string& address_, uint16_t port_)
         : address(address_)
@@ -49,9 +53,8 @@ interface IUdpSocket
 public:
     virtual ~IUdpSocket() = default;
 
-    virtual void Bind(uint16_t port) abstract;
-    virtual void Bind(const char* address, uint16_t port) abstract;
-    virtual void JoinMulticastGroup(const char* address, uint16_t port) abstract;
+    virtual void Bind(const UdpEndpoint& endpoint) abstract;
+    virtual void JoinMulticastGroup(const UdpEndpoint& endpoint) abstract;
 
     virtual UDP_SOCKET_TYPE GetType() abstract;
     virtual UDP_SOCKET_STATUS GetStatus() abstract;
