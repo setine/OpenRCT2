@@ -95,3 +95,5 @@ template<typename T, size_t _TypeID> struct NetworkObjectId_t
 // there is no way to specialize templates if they have the exact symbol.
 using NetworkPlayerId_t = NetworkObjectId_t<int32_t, 0>;
 using NetworkRideId_t = NetworkObjectId_t<int32_t, 1>;
+
+extern const std::string NETWORK_COMMAD_LOCAL_SERVER_QUERY;

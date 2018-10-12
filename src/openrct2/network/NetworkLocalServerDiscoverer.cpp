@@ -17,14 +17,13 @@
 
 #    include "../Diagnostic.h"
 #    include "UdpSocket.h"
+#    include "NetworkTypes.h"
 
 #    include <array>
 #    include <memory>
 #    include <set>
 #    include <string>
 
-// TODO Shared between discovery and advertiser
-static const std::string SERVER_QUERY = "OPENRCT2_SERVER_QUERY";
 
 class NetworkLocalServerDiscoverer final : public INetworkLocalServerDiscoverer
 {
@@ -60,7 +59,7 @@ public:
                 _socket->JoinMulticastGroup(_multicastEndpoint);
             }
 
-            _socket->SendDataTo(_multicastEndpoint, SERVER_QUERY.data(), SERVER_QUERY.size());
+            _socket->SendDataTo(_multicastEndpoint, NETWORK_COMMAD_LOCAL_SERVER_QUERY.data(), NETWORK_COMMAD_LOCAL_SERVER_QUERY.size());
         }
         catch (const std::exception& ex)
         {

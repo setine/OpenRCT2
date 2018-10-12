@@ -17,12 +17,11 @@
 
 #    include "../Diagnostic.h"
 #    include "UdpSocket.h"
+#    include "NetworkTypes.h"
 
 #    include <array>
 #    include <memory>
 #    include <string>
-
-static const std::string SERVER_QUERY = "OPENRCT2_SERVER_QUERY";
 
 class NetworkLocalServerAdvertiser final : public INetworkLocalServerAdvertiser
 {
@@ -66,7 +65,7 @@ public:
 
             if(status == NETWORK_READPACKET_SUCCESS) {
                 std::string msg(_buffer.begin(), _buffer.begin() + readBytes);
-                if(msg == SERVER_QUERY)
+                if(msg == NETWORK_COMMAD_LOCAL_SERVER_QUERY)
                     DoResponse(endpoint, numPlayers, requiresPassword);
             }
         }
