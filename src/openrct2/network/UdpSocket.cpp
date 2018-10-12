@@ -9,6 +9,7 @@
 
 #ifndef DISABLE_NETWORK
 
+#    include <array>
 #    include <cstring>
 #    include <memory>
 #    include <string>
@@ -30,6 +31,7 @@
         #define SHUT_RDWR SD_BOTH
     #endif
     #define FLAG_NO_PIPE 0
+    #define ip_mreq ip_mreq_source
 #else
     #include <cerrno>
     #include <arpa/inet.h>
@@ -148,13 +150,16 @@ public:
             ip_mreq mreq{};
             mreq.imr_interface.s_addr = htonl(INADDR_ANY);
             mreq.imr_multiaddr = ss_in.sin_addr;
-
+#    ifdef _WIN32
+            if (setsockopt(_socket, IPPROTO_IP, IP_ADD_SOURCE_MEMBERSHIP, (const char*)&mreq, sizeof(mreq)) < 0)
+#    else
             if (setsockopt(_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+#    endif
                 throw SocketException("Failed to set multicast mode.");
         }
         else if (type == UDP_SOCKET_TYPE_IPV6)
         {
-            const sockaddr_in6& ss_in = (const sockaddr_in6&)ss;
+            /*const sockaddr_in6& ss_in = (const sockaddr_in6&)ss;
             if (!IN6_IS_ADDR_MULTICAST(&ss_in.sin6_addr))
                 throw SocketException("Address " + endpoint.address + " isn't a multicast address");
 
@@ -162,7 +167,7 @@ public:
             mreq.ipv6mr_multiaddr = ss_in.sin6_addr;
 
             if (setsockopt(_socket, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
-                throw SocketException("Failed to set multicast mode.");
+                throw SocketException("Failed to set multicast mode.");*/
         }
         else
         {
@@ -223,7 +228,7 @@ public:
 
         int32_t readBytes = recvfrom(_socket, (char*)buffer, (int32_t)size, 0, (sockaddr*)&ss, &srcAddressSize);
 
-        if(_type == UDP_SOCKET_TYPE_IPV4)
+        if (_type == UDP_SOCKET_TYPE_IPV4)
         {
             std::array<char, INET_ADDRSTRLEN + 1> address{};
             const sockaddr_in& ss_in = (sockaddr_in&)ss;
@@ -231,7 +236,8 @@ public:
                 srcEndpoint.address = std::string(address.begin(), address.end());
 
             srcEndpoint.port = Convert::NetworkToHost(ss_in.sin_port);
-        } else if(_type == UDP_SOCKET_TYPE_IPV6)
+        }
+        else if (_type == UDP_SOCKET_TYPE_IPV6)
         {
             std::array<char, INET6_ADDRSTRLEN + 1> address{};
             const sockaddr_in6& ss_in = (const sockaddr_in6&)ss;
@@ -240,8 +246,9 @@ public:
                 srcEndpoint.address = std::string(address.begin(), address.end());
 
             srcEndpoint.port = Convert::NetworkToHost(ss_in.sin6_port);
-
-        } else {
+        }
+        else
+        {
             throw SocketException("Unknown UDP socket type encountered!");
         }
 
@@ -316,12 +323,10 @@ private:
             endpointAddress = nullptr;
         }
 
-        std::shared_ptr<addrinfo> result(nullptr, freeaddrinfo);
+        addrinfo* result = nullptr;
         int errorcode = 0;
         {
-            addrinfo* resultPtr = nullptr;
-            errorcode = getaddrinfo(endpointAddress, serviceName.c_str(), &hints, &resultPtr);
-            result.reset(resultPtr);
+            errorcode = getaddrinfo(endpointAddress, serviceName.c_str(), &hints, &result);
         }
         if (errorcode != 0)
         {
@@ -337,10 +342,12 @@ private:
         {
             std::memcpy(ss, result->ai_addr, result->ai_addrlen);
             *ss_len = static_cast<int32_t>(result->ai_addrlen);
+            auto family = result->ai_family;
+            freeaddrinfo(result);
 
-            if (result->ai_family == AF_INET)
+            if (family == AF_INET)
                 return { true, UDP_SOCKET_TYPE_IPV4 };
-            else if (result->ai_family == AF_INET6)
+            else if (family == AF_INET6)
                 return { true, UDP_SOCKET_TYPE_IPV6 };
             else
                 return { true, UDP_SOCKET_TYPE_UNDEFINED };
