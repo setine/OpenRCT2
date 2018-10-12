@@ -11,6 +11,7 @@
 
 #include "../common.h"
 #include "../core/Endianness.h"
+#include <string>
 
 enum
 {
