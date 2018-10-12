@@ -335,21 +335,13 @@ private:
         }
         else
         {
-            if (result->ai_family == AF_INET)
-            {
-                sockaddr_in* ss_in = (sockaddr_in*)ss;
-                std::memcpy(&ss_in->sin_addr, result->ai_addr, result->ai_addrlen);
-                *ss_len = static_cast<int32_t>(result->ai_addrlen);
+            std::memcpy(ss, result->ai_addr, result->ai_addrlen);
+            *ss_len = static_cast<int32_t>(result->ai_addrlen);
 
+            if (result->ai_family == AF_INET)
                 return { true, UDP_SOCKET_TYPE_IPV4 };
-            }
             else if (result->ai_family == AF_INET6)
-            {
-                sockaddr_in6* ss_in = (sockaddr_in6*)ss;
-                std::memcpy(&ss_in->sin6_addr, result->ai_addr, result->ai_addrlen);
-                *ss_len = static_cast<int32_t>(result->ai_addrlen);
                 return { true, UDP_SOCKET_TYPE_IPV6 };
-            }
             else
                 return { true, UDP_SOCKET_TYPE_UNDEFINED };
         }
