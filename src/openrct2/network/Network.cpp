@@ -624,7 +624,7 @@ bool Network::BeginServer(uint16_t port, const char* address)
 
     if (gConfigNetwork.advertise_locally)
     {
-        _local_advertiser.reset(CreateLocalServerAdvertiser(gConfigNetwork));
+        _local_advertiser.reset(CreateLocalServerAdvertiser(gConfigNetwork, network_get_version()));
     }
 
     if (gConfigNetwork.pause_server_if_no_clients)
