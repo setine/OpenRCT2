@@ -10,6 +10,7 @@
 #pragma once
 
 #include "../common.h"
+#include <string>
 
 struct NetworkConfiguration;
 
@@ -20,4 +21,5 @@ interface INetworkLocalServerAdvertiser
     virtual void Update(size_t numPlayers, bool requiresPassword) abstract;
 };
 
-INetworkLocalServerAdvertiser* CreateLocalServerAdvertiser(const NetworkConfiguration& config);
+INetworkLocalServerAdvertiser* CreateLocalServerAdvertiser(
+    const NetworkConfiguration& config, const std::string& networkVersion);

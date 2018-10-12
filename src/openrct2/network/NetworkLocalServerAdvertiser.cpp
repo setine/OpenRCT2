@@ -13,16 +13,14 @@
 
 #    include "../config/Config.h"
 #    include "../core/Console.hpp"
-#    include "network.h" // TODO Make sure no include loops
 #    include "../core/Json.hpp"
 
 #    include "../Diagnostic.h"
 #    include "UdpSocket.h"
 
-#    include <iostream>
-#    include <string>
-#    include <memory>
 #    include <array>
+#    include <memory>
+#    include <string>
 
 static const std::string SERVER_QUERY = "OPENRCT2_SERVER_QUERY";
 
@@ -30,8 +28,9 @@ class NetworkLocalServerAdvertiser final : public INetworkLocalServerAdvertiser
 {
 public:
 
-    NetworkLocalServerAdvertiser(const NetworkConfiguration& config)
-        : _socket(CreateUdpSocket())
+    NetworkLocalServerAdvertiser(const NetworkConfiguration& config, const std::string networkVersion)
+        : _networkVersion(networkVersion)
+        , _socket(CreateUdpSocket())
     {
         try
         {
@@ -74,6 +73,7 @@ public:
     }
 
 private:
+
     void DoResponse(const UdpEndpoint& client, size_t numPlayers, bool requiresPassword)
     {
         std::shared_ptr<json_t> obj(json_object(), json_decref);
@@ -81,7 +81,7 @@ private:
         json_object_set_new(obj.get(), "name", json_string(gConfigNetwork.server_name));
         json_object_set_new(obj.get(), "description", json_string(gConfigNetwork.server_description));
         json_object_set_new(obj.get(), "requiresPassword", json_boolean(requiresPassword));
-        json_object_set_new(obj.get(), "version", json_string(network_get_version().c_str()));
+        json_object_set_new(obj.get(), "version", json_string(_networkVersion.c_str()));
         json_object_set_new(obj.get(), "players", json_integer(numPlayers));
         json_object_set_new(obj.get(), "maxPlayers", json_integer(gConfigNetwork.maxplayers));
 
@@ -98,13 +98,14 @@ private:
         }
     }
 
+    std::string _networkVersion;
     std::unique_ptr<IUdpSocket> _socket;
     std::array<uint8_t,1024> _buffer;
 };
 
-INetworkLocalServerAdvertiser* CreateLocalServerAdvertiser(const NetworkConfiguration& config)
+INetworkLocalServerAdvertiser* CreateLocalServerAdvertiser(const NetworkConfiguration& config, const std::string& networkVersion)
 {
-    return new NetworkLocalServerAdvertiser(config);
+    return new NetworkLocalServerAdvertiser(config, networkVersion);
 }
 
 #endif // DISABLE_NETWORK
