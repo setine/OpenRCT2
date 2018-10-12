@@ -199,10 +199,7 @@ void Network::CloseConnection()
     }
 
     if(_local_advertiser)
-    {
-        delete _local_advertiser;
-        _local_advertiser = nullptr;
-    }
+        _local_advertiser.reset();
 
     mode = NETWORK_MODE_NONE;
     status = NETWORK_STATUS_NONE;
@@ -377,7 +374,7 @@ bool Network::BeginServer(uint16_t port, const char* address)
 
     if (gConfigNetwork.advertise_locally)
     {
-        _local_advertiser = CreateLocalServerAdvertiser(gConfigNetwork);
+        _local_advertiser.reset(CreateLocalServerAdvertiser(gConfigNetwork));
     }
 
     if (gConfigNetwork.pause_server_if_no_clients)

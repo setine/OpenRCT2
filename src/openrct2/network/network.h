@@ -260,7 +260,7 @@ private:
     std::string _password;
     bool _desynchronised = false;
     INetworkServerAdvertiser* _advertiser = nullptr;
-    INetworkLocalServerAdvertiser* _local_advertiser = nullptr;
+    std::unique_ptr<INetworkLocalServerAdvertiser> _local_advertiser;
     uint32_t server_connect_time = 0;
     uint8_t default_group = 0;
     uint32_t game_commands_processed_this_tick = 0;
