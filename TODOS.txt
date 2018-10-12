@@ -1,0 +1,5 @@
+- Test under windows
+- Test with ipv6
+- UI changes?
+- Tests?
+- Formatting, contrib rules
