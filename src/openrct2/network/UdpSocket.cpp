@@ -7,20 +7,14 @@
  * OpenRCT2 is licensed under the GNU General Public License version 3.
  *****************************************************************************/
 
-// TODO Cleanup includes
 #ifndef DISABLE_NETWORK
 
-#    include <chrono>
-#    include <cmath>
 #    include <cstring>
-#    include <future>
+#    include <memory>
 #    include <string>
-#    include <thread>
 
 // clang-format off
 // MSVC: include <math.h> here otherwise PI gets defined twice
-#include <cmath>
-
 #ifdef _WIN32
     // winsock2 must be included before windows.h
     #include <winsock2.h>
@@ -322,8 +316,13 @@ private:
             endpointAddress = nullptr;
         }
 
-        addrinfo* result = nullptr;
-        int errorcode = getaddrinfo(endpointAddress, serviceName.c_str(), &hints, &result);
+        std::shared_ptr<addrinfo> result(nullptr, freeaddrinfo);
+        int errorcode = 0;
+        {
+            addrinfo* resultPtr = nullptr;
+            errorcode = getaddrinfo(endpointAddress, serviceName.c_str(), &hints, &resultPtr);
+            result.reset(resultPtr);
+        }
         if (errorcode != 0)
         {
             log_error("Resolving address failed: Code %d.", errorcode);
@@ -336,16 +335,21 @@ private:
         }
         else
         {
-            memcpy(ss, result->ai_addr, result->ai_addrlen);
-            *ss_len = (int32_t)result->ai_addrlen;
+            if (result->ai_family == AF_INET)
+            {
+                sockaddr_in* ss_in = (sockaddr_in*)ss;
+                std::memcpy(&ss_in->sin_addr, result->ai_addr, result->ai_addrlen);
+                *ss_len = static_cast<int32_t>(result->ai_addrlen);
 
-            auto family = result->ai_family;
-            freeaddrinfo(result);
-
-            if (family == AF_INET)
                 return { true, UDP_SOCKET_TYPE_IPV4 };
-            else if (family == AF_INET6)
+            }
+            else if (result->ai_family == AF_INET6)
+            {
+                sockaddr_in6* ss_in = (sockaddr_in6*)ss;
+                std::memcpy(&ss_in->sin6_addr, result->ai_addr, result->ai_addrlen);
+                *ss_len = static_cast<int32_t>(result->ai_addrlen);
                 return { true, UDP_SOCKET_TYPE_IPV6 };
+            }
             else
                 return { true, UDP_SOCKET_TYPE_UNDEFINED };
         }
