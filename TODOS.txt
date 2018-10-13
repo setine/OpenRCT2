@@ -3,3 +3,5 @@
 - UI changes?
 - Tests?
 - Formatting, contrib rules
+- Client, test all interfaces
+- Server, how to determine which interface to listen on?
