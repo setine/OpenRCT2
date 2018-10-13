@@ -33,12 +33,12 @@ public:
     {
         try
         {
-            _socket->Bind(UdpEndpoint(config.default_port));
+            _socket->Bind(UdpEndpoint(config.advertise_locally_port));
 
             if(_socket->GetType() == UDP_SOCKET_TYPE_IPV4)
-                _socket->JoinMulticastGroup(UdpEndpoint(config.advertise_locally_address_ipv4, config.default_port));
+                _socket->JoinMulticastGroup(UdpEndpoint(config.advertise_locally_address_ipv4, config.advertise_locally_port));
             else if(_socket->GetType() == UDP_SOCKET_TYPE_IPV6)
-                _socket->JoinMulticastGroup(UdpEndpoint(config.advertise_locally_address_ipv6, config.default_port));
+                _socket->JoinMulticastGroup(UdpEndpoint(config.advertise_locally_address_ipv6, config.advertise_locally_port));
             else
                 throw SocketException("Unknown UDP socket type encountered!");
 

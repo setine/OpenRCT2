@@ -390,6 +390,8 @@ namespace Config
             model->log_server_actions = reader->GetBoolean("log_server_actions", false);
             model->pause_server_if_no_clients = reader->GetBoolean("pause_server_if_no_clients", false);
             model->advertise_locally = reader->GetBoolean("advertise_locally", true);
+            model->advertise_locally_port = reader->GetInt32("advertise_locally_port", NETWORK_ADVERTISE_LOCALLY_DEFAULT_PORT);
+
             model->advertise_locally_address_ipv4 = reader->GetCString("advertise_locally_address_ipv4", "239.255.0.1");
             model->advertise_locally_address_ipv6 = reader->GetCString("advertise_locally_address_ipv6", "ff13::8000:1175");
         }
@@ -418,6 +420,7 @@ namespace Config
         writer->WriteBoolean("log_server_actions", model->log_server_actions);
         writer->WriteBoolean("pause_server_if_no_clients", model->pause_server_if_no_clients);
         writer->WriteBoolean("advertise_locally", model->advertise_locally);
+        writer->WriteInt32("advertise_locally_port", model->advertise_locally_port);
         writer->WriteString("advertise_locally_address_ipv4", model->advertise_locally_address_ipv4);
         writer->WriteString("advertise_locally_address_ipv6", model->advertise_locally_address_ipv6);
     }

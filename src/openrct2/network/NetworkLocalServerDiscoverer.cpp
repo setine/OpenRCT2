@@ -29,9 +29,9 @@ class NetworkLocalServerDiscoverer final : public INetworkLocalServerDiscoverer
 {
 public:
     NetworkLocalServerDiscoverer(const NetworkConfiguration& config)
-        : _multicastEndpointIPv4(config.advertise_locally_address_ipv4, config.default_port)
-        , _multicastEndpointIPv6(config.advertise_locally_address_ipv6, config.default_port)
-        , _listenPort(config.default_port)
+        : _multicastEndpointIPv4(config.advertise_locally_address_ipv4, config.advertise_locally_port)
+        , _multicastEndpointIPv6(config.advertise_locally_address_ipv6, config.advertise_locally_port)
+        , _listenPort(config.advertise_locally_port)
         , _socket(CreateUdpSocket())
     {
     }
