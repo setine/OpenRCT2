@@ -33,7 +33,7 @@ public:
     {
         try
         {
-            _socket->Bind(config.default_port);
+            _socket->Bind(UdpEndpoint(config.default_port));
 
             if(_socket->GetType() == UDP_SOCKET_TYPE_IPV4)
                 _socket->JoinMulticastGroup(UdpEndpoint(config.advertise_locally_address_ipv4, config.default_port));

@@ -47,7 +47,7 @@ public:
         {
             if (_socket->GetStatus() == UDP_SOCKET_STATUS_CLOSED)
             {
-                _socket->Bind(_listenPort);
+                _socket->Bind(UdpEndpoint(_listenPort));
 
                 if(_socket->GetType() == UDP_SOCKET_TYPE_IPV4)
                     _multicastEndpoint = _multicastEndpointIPv4;
