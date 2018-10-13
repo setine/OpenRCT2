@@ -282,6 +282,7 @@ static void window_server_list_update(rct_window* w)
 
     if(_discoverer) {
         std::vector<server_entry> servers = _discoverer->Update();
+        _discoverer->ClearServers();
         if(!servers.empty())
         {
             std::lock_guard<std::mutex> guard(_mutex);
