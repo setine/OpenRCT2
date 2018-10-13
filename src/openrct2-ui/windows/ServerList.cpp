@@ -289,6 +289,7 @@ static void window_server_list_update(rct_window* w)
             {
                 auto& newserver = add_server_entry(entry.address);
                 newserver = entry;
+                newserver.favourite = true;
             }
         }
     }
