@@ -178,12 +178,12 @@ public:
         }
     }
 
-    UDP_SOCKET_TYPE GetType() override
+    UDP_SOCKET_TYPE GetType() const override
     {
         return _type;
     }
 
-    UDP_SOCKET_STATUS GetStatus() override
+    UDP_SOCKET_STATUS GetStatus() const override
     {
         return _status;
     }
@@ -313,7 +313,7 @@ private:
         _status = UDP_SOCKET_STATUS_CLOSED;
     }
 
-    std::tuple<bool, UDP_SOCKET_TYPE> ResolveAddress(const UdpEndpoint& endpoint, sockaddr_storage* ss, int32_t* ss_len)
+    std::tuple<bool, UDP_SOCKET_TYPE> ResolveAddress(const UdpEndpoint& endpoint, sockaddr_storage* ss, int32_t* ss_len) const
     {
         const char* endpointAddress = endpoint.address.c_str();
         std::string serviceName = std::to_string(endpoint.port);

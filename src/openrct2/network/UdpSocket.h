@@ -56,9 +56,8 @@ public:
     virtual void Bind(const UdpEndpoint& endpoint) abstract;
     virtual void JoinMulticastGroup(const UdpEndpoint& endpoint) abstract;
 
-    virtual UDP_SOCKET_TYPE GetType() abstract;
-    virtual UDP_SOCKET_STATUS GetStatus() abstract;
-
+    virtual UDP_SOCKET_TYPE GetType() const abstract;
+    virtual UDP_SOCKET_STATUS GetStatus() const abstract;
 
     virtual size_t SendDataTo(const UdpEndpoint& remote, const void* buffer, size_t size) abstract;
     virtual std::tuple<NETWORK_READPACKET,UdpEndpoint> ReceiveDataFrom(void* buffer, size_t size, size_t* sizeReceived) abstract;
