@@ -9,10 +9,10 @@
 
 #ifndef DISABLE_NETWORK
 
+#    include <array>
 #    include <cstring>
 #    include <memory>
 #    include <string>
-#    include <array>
 
 // clang-format off
 // MSVC: include <math.h> here otherwise PI gets defined twice
@@ -152,7 +152,7 @@ public:
             mreq.imr_multiaddr = ss_in.sin_addr;
 #    ifdef _WIN32
             if (setsockopt(_socket, IPPROTO_IP, IP_ADD_SOURCE_MEMBERSHIP, (const char*)&mreq, sizeof(mreq)) < 0)
-#                else
+#    else
             if (setsockopt(_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
 #    endif
                 throw SocketException("Failed to set multicast mode.");
@@ -228,7 +228,7 @@ public:
 
         int32_t readBytes = recvfrom(_socket, (char*)buffer, (int32_t)size, 0, (sockaddr*)&ss, &srcAddressSize);
 
-        if(_type == UDP_SOCKET_TYPE_IPV4)
+        if (_type == UDP_SOCKET_TYPE_IPV4)
         {
             std::array<char, INET_ADDRSTRLEN + 1> address{};
             const sockaddr_in& ss_in = (sockaddr_in&)ss;
@@ -236,7 +236,8 @@ public:
                 srcEndpoint.address = std::string(address.begin(), address.end());
 
             srcEndpoint.port = Convert::NetworkToHost(ss_in.sin_port);
-        } else if(_type == UDP_SOCKET_TYPE_IPV6)
+        }
+        else if (_type == UDP_SOCKET_TYPE_IPV6)
         {
             std::array<char, INET6_ADDRSTRLEN + 1> address{};
             const sockaddr_in6& ss_in = (const sockaddr_in6&)ss;
@@ -245,8 +246,9 @@ public:
                 srcEndpoint.address = std::string(address.begin(), address.end());
 
             srcEndpoint.port = Convert::NetworkToHost(ss_in.sin6_port);
-
-        } else {
+        }
+        else
+        {
             throw SocketException("Unknown UDP socket type encountered!");
         }
 
@@ -321,7 +323,7 @@ private:
             endpointAddress = nullptr;
         }
 
-        std::shared_ptr<addrinfo> result(nullptr, freeaddrinfo);
+        std::shared_ptr<addrinfo> result(nullptr, [](addrinfo* ptr) { if(ptr) freeaddrinfo(ptr); });
         int errorcode = 0;
         {
             addrinfo* resultPtr = nullptr;
