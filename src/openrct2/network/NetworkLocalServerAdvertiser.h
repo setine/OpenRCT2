@@ -10,6 +10,7 @@
 #pragma once
 
 #include "../common.h"
+
 #include <string>
 
 struct NetworkConfiguration;
@@ -18,8 +19,9 @@ interface INetworkLocalServerAdvertiser
 {
     virtual ~INetworkLocalServerAdvertiser() = default;
 
-    virtual void Update(size_t numPlayers, bool requiresPassword) abstract;
+    virtual void Update(size_t numPlayers) abstract;
 };
 
 INetworkLocalServerAdvertiser* CreateLocalServerAdvertiser(
-    const NetworkConfiguration& config, const std::string& networkVersion);
+    const NetworkConfiguration& config, const std::string& runningServerAddress, int32_t runningServerPort,
+    bool runningServerRequiresPassword, const std::string& networkVersion);
