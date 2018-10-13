@@ -76,6 +76,11 @@ public:
         _knownServers.clear();
     }
 
+    void ClearServers() override
+    {
+        _knownServers.clear();
+    }
+
     std::vector<server_entry> Update() override
     {
         std::vector<server_entry> result(_knownServers.begin(), _knownServers.end());
@@ -86,7 +91,6 @@ public:
         size_t readBytes = 0;
         auto [status, endpoint] = _socket->ReceiveDataFrom(_buffer.data(), _buffer.size(), &readBytes);
 
-        // TODO What if more than one message available
         if (status == NETWORK_READPACKET_SUCCESS)
         {
             std::string msg(_buffer.begin(), _buffer.begin() + readBytes);

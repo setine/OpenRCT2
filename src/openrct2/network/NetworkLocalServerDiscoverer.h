@@ -23,6 +23,7 @@ interface INetworkLocalServerDiscoverer
     virtual void StopQuery() abstract;
 
     virtual std::vector<server_entry> Update() abstract;
+    virtual void ClearServers() abstract;
 
 };
 
