@@ -159,17 +159,14 @@ public:
         }
         else if (type == UDP_SOCKET_TYPE_IPV6)
         {
-#    ifdef _WIN32
-            // TODO
-#    else
             const sockaddr_in6& ss_in = (const sockaddr_in6&)ss;
             if (!IN6_IS_ADDR_MULTICAST(&ss_in.sin6_addr))
                 throw SocketException("Address " + endpoint.address + " isn't a multicast address");
-#    endif
+
             ipv6_mreq mreq{};
             mreq.ipv6mr_multiaddr = ss_in.sin6_addr;
 
-            if (setsockopt(_socket, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+            if (setsockopt(_socket, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char*)&mreq, sizeof(mreq)) < 0)
                 throw SocketException("Failed to set multicast mode.");
         }
         else
