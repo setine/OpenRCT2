@@ -36,6 +36,7 @@
     #include <cerrno>
     #include <arpa/inet.h>
     #include <netdb.h>
+    #include <ifaddrs.h>
     #include <netinet/tcp.h>
     #include <netinet/in.h>
     #include <sys/socket.h>
@@ -61,43 +62,41 @@ std::vector<UdpEndpoint> IUdpSocket::AvailableEndpoints(uint16_t port)
 {
     std::vector<UdpEndpoint> endpoints;
 
-    addrinfo hints = {};
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_flags = AI_PASSIVE;
-
-    addrinfo* result = nullptr;
     std::string serviceName = std::to_string(port);
 
-    int errorcode = getaddrinfo(nullptr, serviceName.c_str(), &hints, &result);
+    ifaddrs* result = nullptr;
+    int errorcode = getifaddrs(&result);
     if (errorcode != 0)
     {
         log_error("Resolving address failed: Code %d.", errorcode);
-        log_error("Resolution error message: %s.", gai_strerror(errorcode));
+        perror("getifaddrs");
         return endpoints;
     }
 
-    for(auto it = result; it; it = it->ai_next)
+    for(auto it = result; it; it = it->ifa_next)
     {
-        int sfd = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
-        if (sfd == -1)
+        int family = it->ifa_addr->sa_family;
+        if(family != AF_INET && family != AF_INET6)
             continue;
 
-        closesocket(sfd);
-
         char host[NI_MAXHOST], service[NI_MAXSERV];
-        errorcode = getnameinfo(it->ai_addr, (socklen_t)it->ai_addrlen, host, NI_MAXHOST, service, NI_MAXSERV, NI_NUMERICSERV | NI_NUMERICHOST);
+        errorcode = getnameinfo(
+            it->ifa_addr, (family == AF_INET) ? sizeof(sockaddr_in) : sizeof(sockaddr_in6), host, NI_MAXHOST, service,
+            NI_MAXSERV, NI_NUMERICSERV | NI_NUMERICHOST);
+
         if (errorcode != 0)
         {
             log_error("Resolving address name failed: Code %d.", errorcode);
             log_error("Error message: %s.", gai_strerror(errorcode));
+
+            freeifaddrs(result);
             return endpoints;
         }
 
         endpoints.emplace_back(host, port);
     }
-    freeaddrinfo(result);
 
+    freeifaddrs(result);
     return endpoints;
 }
 
