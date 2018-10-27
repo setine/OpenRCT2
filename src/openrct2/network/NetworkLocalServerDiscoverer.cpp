@@ -21,6 +21,7 @@
 
 #    include <array>
 #    include <memory>
+#    include <optional>
 #    include <set>
 #    include <string>
 
@@ -32,7 +33,6 @@ public:
         : _multicastEndpointIPv4(config.advertise_locally_address_ipv4, config.advertise_locally_port)
         , _multicastEndpointIPv6(config.advertise_locally_address_ipv6, config.advertise_locally_port)
         , _listenPort(config.advertise_locally_port)
-        , _socket(CreateUdpSocket())
     {
     }
 
@@ -45,21 +45,27 @@ public:
     {
         try
         {
-            if (_socket->GetStatus() == UDP_SOCKET_STATUS_CLOSED)
-            {
-                _socket->Bind(UdpEndpoint("0.0.0.0",_listenPort)); // TODO
+            if(_sockets.empty()){
+                auto endpoints =  IUdpSocket::AvailableEndpoints(_listenPort);
+                for(const UdpEndpoint& endpoint : endpoints)
+                {
+                    _sockets.emplace_back(CreateUdpSocket());
 
-                if(_socket->GetType() == UDP_SOCKET_TYPE_IPV4)
-                    _multicastEndpoint = _multicastEndpointIPv4;
-                else if(_socket->GetType() == UDP_SOCKET_TYPE_IPV6)
-                    _multicastEndpoint = _multicastEndpointIPv6;
-                else
-                    throw SocketException("Unknown UDP socket type encountered!");
+                    IUdpSocket* socket = _sockets.back().get();
+                    socket->Bind(endpoint);
 
-                _socket->JoinMulticastGroup(_multicastEndpoint);
+                    std::optional<UdpEndpoint> multicastEndpoint;
+                    if(socket->GetType() == UDP_SOCKET_TYPE_IPV4)
+                        multicastEndpoint = _multicastEndpointIPv4;
+                    else if(socket->GetType() == UDP_SOCKET_TYPE_IPV6)
+                        multicastEndpoint = _multicastEndpointIPv6;
+                    else
+                        throw SocketException("Unknown UDP socket type encountered!");
+
+                    socket->SendDataTo(*multicastEndpoint, NETWORK_COMMAD_LOCAL_SERVER_QUERY.data(), NETWORK_COMMAD_LOCAL_SERVER_QUERY.size());
+                }
             }
 
-            _socket->SendDataTo(_multicastEndpoint, NETWORK_COMMAD_LOCAL_SERVER_QUERY.data(), NETWORK_COMMAD_LOCAL_SERVER_QUERY.size());
         }
         catch (const std::exception& ex)
         {
@@ -69,10 +75,13 @@ public:
 
     void StopQuery() override
     {
-        if (_socket->GetStatus() == UDP_SOCKET_STATUS_CLOSED)
-            return;
+        for(auto& socket : _sockets)
+        {
+            if (socket->GetStatus() == UDP_SOCKET_STATUS_CLOSED)
+                return;
 
-        _socket->Close();
+            socket->Close();
+        }
         _knownServers.clear();
     }
 
@@ -85,31 +94,34 @@ public:
     {
         std::vector<server_entry> result(_knownServers.begin(), _knownServers.end());
 
-        if (_socket->GetStatus() == UDP_SOCKET_STATUS_CLOSED)
-            return result;
-
-        size_t readBytes = 0;
-        auto [status, endpoint] = _socket->ReceiveDataFrom(_buffer.data(), _buffer.size(), &readBytes);
-
-        if (status == NETWORK_READPACKET_SUCCESS)
+        for(auto& socket : _sockets)
         {
-            std::string msg(_buffer.begin(), _buffer.begin() + readBytes);
+            if (socket->GetStatus() == UDP_SOCKET_STATUS_CLOSED)
+                continue;
 
-            server_entry entry;
-            bool successful = parseServerReply(msg, endpoint, entry);
-            if (successful)
+            size_t readBytes = 0;
+            auto [status, endpoint] = socket->ReceiveDataFrom(_buffer.data(), _buffer.size(), &readBytes);
+
+            if (status == NETWORK_READPACKET_SUCCESS)
             {
-                auto [it, wasInserted] = _knownServers.insert(entry);
-                if (!wasInserted)
-                {
-                    _knownServers.erase(it);
-                    _knownServers.insert(entry);
-                }
+                std::string msg(_buffer.begin(), _buffer.begin() + readBytes);
 
-                result = std::vector<server_entry>(_knownServers.begin(), _knownServers.end());
+                server_entry entry;
+                bool successful = parseServerReply(msg, endpoint, entry);
+                if (successful)
+                {
+                    auto [it, wasInserted] = _knownServers.insert(entry);
+                    if (!wasInserted)
+                    {
+                        _knownServers.erase(it);
+                        _knownServers.insert(entry);
+                    }
+
+                }
             }
         }
 
+        result = std::vector<server_entry>(_knownServers.begin(), _knownServers.end());
         return result;
     }
 
@@ -154,9 +166,8 @@ private:
     const UdpEndpoint _multicastEndpointIPv6;
 
     uint16_t _listenPort;
-    UdpEndpoint _multicastEndpoint;
 
-    std::unique_ptr<IUdpSocket> _socket;
+    std::vector<std::unique_ptr<IUdpSocket>> _sockets;
     std::array<uint8_t, 1024> _buffer;
 
     std::set<server_entry> _knownServers;

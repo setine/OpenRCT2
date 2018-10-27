@@ -47,15 +47,16 @@ struct UdpEndpoint {
 };
 
 
+
 /**
  * Represents a UDP socket.
  */
 interface IUdpSocket
 {
 public:
-    virtual ~IUdpSocket() = default;
+    static std::vector<UdpEndpoint> AvailableEndpoints(uint16_t port);
 
-    virtual std::vector<UdpEndpoint> AvailableEndpoints(uint16_t port) const abstract;
+    virtual ~IUdpSocket() = default;
 
     virtual void Bind(const UdpEndpoint& endpoint) abstract;
     virtual void JoinMulticastGroup(const UdpEndpoint& endpoint) abstract;

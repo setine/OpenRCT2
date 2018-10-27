@@ -72,7 +72,7 @@ public:
         CloseSocket();
     }
 
-    std::vector<UdpEndpoint> AvailableEndpoints(uint16_t port) const override
+    std::vector<UdpEndpoint> AvailableEndpoints(uint16_t port)
     {
         return { UdpEndpoint(port) }; // TODO
     }
