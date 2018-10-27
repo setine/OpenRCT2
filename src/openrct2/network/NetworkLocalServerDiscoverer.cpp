@@ -45,6 +45,8 @@ public:
 
     void StartQuery() override
     {
+        _numDiscoveryPacketsSent = 0;
+
         try
         {
             if(_sockets.empty()){
@@ -52,19 +54,7 @@ public:
                 for(const UdpEndpoint& endpoint : endpoints)
                 {
                     _sockets.emplace_back(CreateUdpSocket());
-
-                    IUdpSocket* socket = _sockets.back().get();
-                    socket->Bind(endpoint);
-
-                    std::optional<UdpEndpoint> multicastEndpoint;
-                    if(socket->GetType() == UDP_SOCKET_TYPE_IPV4)
-                        multicastEndpoint = _multicastEndpointIPv4;
-                    else if(socket->GetType() == UDP_SOCKET_TYPE_IPV6)
-                        multicastEndpoint = _multicastEndpointIPv6;
-                    else
-                        throw SocketException("Unknown UDP socket type encountered!");
-
-                    socket->SendDataTo(*multicastEndpoint, NETWORK_COMMAD_LOCAL_SERVER_QUERY.data(), NETWORK_COMMAD_LOCAL_SERVER_QUERY.size());
+                    _sockets.back()->Bind(endpoint);
                 }
             }
 
