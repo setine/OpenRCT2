@@ -1,7 +1,11 @@
+- Client, test all interfaces
+-- Get all available endpoints from UdpSocket
+-- In discoverer, iterate over all of them -> vector of sockets
+
 - Test under windows
 - Test with ipv6
 - UI changes?
 - Tests?
 - Formatting, contrib rules
-- Client, test all interfaces
 - Server, how to determine which interface to listen on?
+- Maybe send a second broadcast (quake)
