@@ -57,6 +57,50 @@
 
 #    include "UdpSocket.h"
 
+std::vector<UdpEndpoint> IUdpSocket::AvailableEndpoints(uint16_t port)
+{
+    std::vector<UdpEndpoint> endpoints;
+
+    addrinfo hints = {};
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    addrinfo* result = nullptr;
+    std::string serviceName = std::to_string(port);
+
+    int errorcode = getaddrinfo(nullptr, serviceName.c_str(), &hints, &result);
+    if (errorcode != 0)
+    {
+        log_error("Resolving address failed: Code %d.", errorcode);
+        log_error("Resolution error message: %s.", gai_strerror(errorcode));
+        return endpoints;
+    }
+
+    for(auto it = result; it; it = it->ai_next)
+    {
+        int sfd = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
+        if (sfd == -1)
+            continue;
+
+        close(sfd);
+
+        char host[NI_MAXHOST], service[NI_MAXSERV];
+        errorcode = getnameinfo(it->ai_addr, it->ai_addrlen, host, NI_MAXHOST, service, NI_MAXSERV, NI_NUMERICSERV);
+        if (errorcode != 0)
+        {
+            log_error("Resolving address name failed: Code %d.", errorcode);
+            log_error("Error message: %s.", gai_strerror(errorcode));
+            return endpoints;
+        }
+
+        endpoints.emplace_back(host, port);
+    }
+    freeaddrinfo(result);
+
+    return endpoints;
+}
+
 class UdpSocket final : public IUdpSocket
 {
 private:
@@ -70,11 +114,6 @@ public:
     ~UdpSocket() override
     {
         CloseSocket();
-    }
-
-    std::vector<UdpEndpoint> AvailableEndpoints(uint16_t port)
-    {
-        return { UdpEndpoint(port) }; // TODO
     }
 
     void Bind(const UdpEndpoint& endpoint) override
