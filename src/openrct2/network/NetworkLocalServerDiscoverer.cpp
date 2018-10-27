@@ -25,6 +25,7 @@
 #    include <set>
 #    include <string>
 
+constexpr int NUM_DISCOVERY_PACKETS = 2;
 
 class NetworkLocalServerDiscoverer final : public INetworkLocalServerDiscoverer
 {
@@ -33,6 +34,7 @@ public:
         : _multicastEndpointIPv4(config.advertise_locally_address_ipv4, config.advertise_locally_port)
         , _multicastEndpointIPv6(config.advertise_locally_address_ipv6, config.advertise_locally_port)
         , _listenPort(config.advertise_locally_port)
+        , _numDiscoveryPacketsSent(0)
     {
     }
 
@@ -92,6 +94,12 @@ public:
 
     std::vector<server_entry> Update() override
     {
+        if(_numDiscoveryPacketsSent < NUM_DISCOVERY_PACKETS)
+        {
+            sendDiscoveryPackets();
+            _numDiscoveryPacketsSent++;
+        }
+
         std::vector<server_entry> result(_knownServers.begin(), _knownServers.end());
 
         for(auto& socket : _sockets)
@@ -162,10 +170,31 @@ private:
         return true;
     }
 
+    void sendDiscoveryPackets()
+    {
+        for(auto& socket : _sockets)
+        {
+            if (socket->GetStatus() == UDP_SOCKET_STATUS_CLOSED)
+                continue;
+
+            std::optional<UdpEndpoint> multicastEndpoint;
+            if(socket->GetType() == UDP_SOCKET_TYPE_IPV4)
+                multicastEndpoint = _multicastEndpointIPv4;
+            else if(socket->GetType() == UDP_SOCKET_TYPE_IPV6)
+                multicastEndpoint = _multicastEndpointIPv6;
+            else
+                throw SocketException("Unknown UDP socket type encountered!");
+
+            socket->SendDataTo(*multicastEndpoint, NETWORK_COMMAD_LOCAL_SERVER_QUERY.data(), NETWORK_COMMAD_LOCAL_SERVER_QUERY.size());
+        }
+    }
+
     const UdpEndpoint _multicastEndpointIPv4;
     const UdpEndpoint _multicastEndpointIPv6;
 
     uint16_t _listenPort;
+
+    int _numDiscoveryPacketsSent;
 
     std::vector<std::unique_ptr<IUdpSocket>> _sockets;
     std::array<uint8_t, 1024> _buffer;
