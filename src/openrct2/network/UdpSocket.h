@@ -31,6 +31,7 @@ struct UdpEndpoint {
 
     UdpEndpoint(){}
 
+    /// TODO remove?
     explicit UdpEndpoint(uint16_t port_)
         : port(port_)
     {}
