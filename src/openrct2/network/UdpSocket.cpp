@@ -72,6 +72,11 @@ public:
         CloseSocket();
     }
 
+    std::vector<UdpEndpoint> AvailableEndpoints(uint16_t port) const override
+    {
+        return { UdpEndpoint(port) }; // TODO
+    }
+
     void Bind(const UdpEndpoint& endpoint) override
     {
         if (_status != UDP_SOCKET_STATUS_CLOSED)

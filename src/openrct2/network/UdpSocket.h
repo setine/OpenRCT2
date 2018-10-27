@@ -12,6 +12,7 @@
 #include "../common.h"
 #include "SocketUtil.h"
 #include <tuple>
+#include <vector>
 
 enum UDP_SOCKET_STATUS
 {
@@ -53,6 +54,8 @@ interface IUdpSocket
 {
 public:
     virtual ~IUdpSocket() = default;
+
+    virtual std::vector<UdpEndpoint> AvailableEndpoints(uint16_t port) const abstract;
 
     virtual void Bind(const UdpEndpoint& endpoint) abstract;
     virtual void JoinMulticastGroup(const UdpEndpoint& endpoint) abstract;
