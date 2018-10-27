@@ -86,7 +86,7 @@ std::vector<UdpEndpoint> IUdpSocket::AvailableEndpoints(uint16_t port)
         closesocket(sfd);
 
         char host[NI_MAXHOST], service[NI_MAXSERV];
-        errorcode = getnameinfo(it->ai_addr, (socklen_t)it->ai_addrlen, host, NI_MAXHOST, service, NI_MAXSERV, NI_NUMERICSERV);
+        errorcode = getnameinfo(it->ai_addr, (socklen_t)it->ai_addrlen, host, NI_MAXHOST, service, NI_MAXSERV, NI_NUMERICSERV | NI_NUMERICHOST);
         if (errorcode != 0)
         {
             log_error("Resolving address name failed: Code %d.", errorcode);
