@@ -24,6 +24,7 @@
 #    include <set>
 #    include <string>
 
+constexpr int NUM_DISCOVERY_PACKETS = 2;
 
 class NetworkLocalServerDiscoverer final : public INetworkLocalServerDiscoverer
 {
@@ -33,6 +34,7 @@ public:
         , _multicastEndpointIPv6(config.advertise_locally_address_ipv6, config.advertise_locally_port)
         , _listenPort(config.advertise_locally_port)
         , _socket(CreateUdpSocket())
+        , _numDiscoveryPacketsSent(0)
     {
     }
 
@@ -43,6 +45,8 @@ public:
 
     void StartQuery() override
     {
+        _numDiscoveryPacketsSent = 0;
+
         try
         {
             if (_socket->GetStatus() == UDP_SOCKET_STATUS_CLOSED)
@@ -58,8 +62,6 @@ public:
 
                 _socket->JoinMulticastGroup(_multicastEndpoint);
             }
-
-            _socket->SendDataTo(_multicastEndpoint, NETWORK_COMMAD_LOCAL_SERVER_QUERY.data(), NETWORK_COMMAD_LOCAL_SERVER_QUERY.size());
         }
         catch (const std::exception& ex)
         {
@@ -87,6 +89,12 @@ public:
 
         if (_socket->GetStatus() == UDP_SOCKET_STATUS_CLOSED)
             return result;
+
+        if(_numDiscoveryPacketsSent < NUM_DISCOVERY_PACKETS)
+        {
+            _socket->SendDataTo(_multicastEndpoint, NETWORK_COMMAD_LOCAL_SERVER_QUERY.data(), NETWORK_COMMAD_LOCAL_SERVER_QUERY.size());
+            _numDiscoveryPacketsSent++;
+        }
 
         size_t readBytes = 0;
         auto [status, endpoint] = _socket->ReceiveDataFrom(_buffer.data(), _buffer.size(), &readBytes);
@@ -158,6 +166,7 @@ private:
 
     std::unique_ptr<IUdpSocket> _socket;
     std::array<uint8_t, 1024> _buffer;
+    int _numDiscoveryPacketsSent;
 
     std::set<server_entry> _knownServers;
 };
