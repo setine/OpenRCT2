@@ -19,6 +19,7 @@
 #include "../ui/WindowManager.h"
 #include "../util/SawyerCoding.h"
 #include "../world/Location.hpp"
+#include "NetworkLocalServerAdvertiser.h"
 
 #include <algorithm>
 #include <iterator>
@@ -269,7 +270,7 @@ private:
     ITcpSocket* listening_socket = nullptr;
     uint16_t listening_port = 0;
     NetworkConnection* server_connection = nullptr;
-    SOCKET_STATUS _lastConnectStatus = SOCKET_STATUS_CLOSED;
+    TCP_SOCKET_STATUS _lastConnectStatus = TCP_SOCKET_STATUS_CLOSED;
     uint32_t last_tick_sent_time = 0;
     uint32_t last_ping_sent_time = 0;
     uint32_t server_tick = 0;
@@ -283,6 +284,7 @@ private:
     std::string _password;
     bool _desynchronised = false;
     INetworkServerAdvertiser* _advertiser = nullptr;
+    std::unique_ptr<INetworkLocalServerAdvertiser> _local_advertiser;
     uint32_t server_connect_time = 0;
     uint8_t default_group = 0;
     uint32_t game_commands_processed_this_tick = 0;
