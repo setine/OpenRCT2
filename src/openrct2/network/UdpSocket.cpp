@@ -88,21 +88,21 @@ public:
         _type = type;
 
         // Create the listening socket
-        _socket = socket(ss.ss_family, SOCK_DGRAM, 0);
+        _socket = socket(ss.ss_family, SOCK_DGRAM, IPPROTO_UDP);
         if (_socket == INVALID_SOCKET)
         {
             throw SocketException("Unable to create socket.");
         }
 
         // Turn off IPV6_V6ONLY so we can accept both v4 and v6 connections
-        if (_type == UDP_SOCKET_TYPE_IPV6)
-        {
-            int32_t value = 0;
-            if (setsockopt(_socket, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&value, sizeof(value)) != 0)
-            {
-                log_error("IPV6_V6ONLY failed. %d", LAST_SOCKET_ERROR());
-            }
-        }
+        //if (_type == UDP_SOCKET_TYPE_IPV6)
+        //{
+        //    int32_t value = 0;
+        //    if (setsockopt(_socket, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&value, sizeof(value)) != 0)
+        //    {
+        //        log_error("IPV6_V6ONLY failed. %d", LAST_SOCKET_ERROR());
+        //    }
+        //}
 
         int32_t value = 1;
         if (setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, (const char*)&value, sizeof(value)) != 0)
